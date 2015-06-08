@@ -1,0 +1,11 @@
+{
+  "name": "prointer-iv",
+  "version": "0.0.1",
+  "description": "Um software de desenvolvimento de trabalhos em grupos.",
+  "main": "server.js",
+  "repository": "",
+  "author": "Anderson Marques de Oliveira Carvalho <munificentissimus@gmail.com>",
+  "dependencies": {
+    "express": "~3.2.4"
+  }
+}
