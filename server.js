@@ -26,30 +26,75 @@ var jsonParser = bodyParser.json();
 
 // REST Web Service - POST https://prointeriv-munificentissimus1.c9.io/alunos
 // Cadastrar novo aluno
-app.post('/alunos', jsonParser, function(req,res){
+app.post('/alunos', jsonParser, function(requisicao,resposta){
   //Define o conteúdo a ser devolvido ao cliente
-  res.setHeader('Content-Type', 'application/json; charset=utf-8');
+  resposta.setHeader('Content-Type', 'application/json; charset=utf-8');
   
-  var json = '';
-  registroService.registrarAluno(req.body.matricula, req.body.nome, req.body.nome, function(err){
-    if(err){
-      if (err.tipoErro === "duplicidade"){
-        res.statusCode = 409;
+  var dadosRecebidos = requisicao.body;
+  
+  registroService.registrarAluno(dadosRecebidos.matricula, dadosRecebidos.nome, dadosRecebidos.senha, function(erro , aluno){
+    if(erro){
+      if (erro.tipoErro === "duplicidade"){
+        responderErro(resposta, 409 , "Já existe aluno registrado com matricula: " + dadosRecebidos.matricula );
       } else {
-        res.statusCode = 500;
+        responderErro(resposta, 500 , "Erro ao registrar aluno: " + erro );
       }
-      json = JSON.stringify(err);
-      res.end(json);
+    } else {
+      responderSucesso(resposta,"Seja bem vindo " + aluno.nome + "!");
     }
-    res.end(JSON.stringify({"mensagem":"Aluno registrado com sucesso!"}));
   });
 });
 
 // REST Web Service - GET https://prointeriv-munificentissimus1.c9.io/alunos 
 // Listar todos os alunos cadastrados
 app.get('/alunos', jsonParser, function(req,res){
+   //Define o conteúdo a ser devolvido ao cliente
+  res.setHeader('Content-Type', 'application/json; charset=utf-8');
   
+  var alunosService = require("./services/alunosService.js")(Aluno);
+  
+  alunosService.listarAlunos(function(err,alunos){
+      if (err){
+         console.log(err);
+         responderErro(res, 500 , "Erro ao listar alunos: " + err );
+      }
+      
+      responderSucesso(res, alunos);
+  });
 });
+
+// REST Web Service - GET https://prointeriv-munificentissimus1.c9.io/alunos/:matricula 
+// Consultar alunos cadastrado específico
+app.get('/alunos/:matricula',jsonParser,function(requisicao, resposta) {
+     //Define o conteúdo a ser devolvido ao cliente
+    resposta.setHeader('Content-Type', 'application/json; charset=utf-8');
+    
+    var alunosService = require("./services/alunosService.js")(Aluno);
+    
+    var matricula = requisicao.params.matricula;
+    
+    alunosService.pesquisarAluno(matricula,function(erro,aluno){
+      if (erro){
+         console.log(erro);
+         responderErro(resposta, 500 , "Erro ao listar alunos: " + erro );
+      }
+      
+      responderSucesso(resposta, aluno);
+  });
+});
+
+function responderErro(resposta, statusCode, mensagem){
+  var serviceResponse = { "statusCode" : statusCode , "dados" : null , "mensagem" : mensagem  };
+  resposta.statusCode = statusCode;
+  resposta.end(JSON.stringify(serviceResponse));
+}
+
+function responderSucesso(resposta, dados){
+  //var serviceResponse = { "statusCode" : 200 , "dados" : dados , "mensagem" : null  };
+  resposta.statusCode = 200;
+  resposta.end(JSON.stringify(dados));
+}
+
 
 server.listen(process.env.PORT || 3000,process.env.IP || "0.0.0.0", 
 function(){

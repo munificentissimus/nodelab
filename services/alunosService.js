@@ -29,7 +29,37 @@ module.exports = function (Aluno){
 		});
 	};
 	
+	/**
+	 * Perquisar por um aluno
+	*/
+	var pesquisarAluno = function(matricula,callback){
+		var criterio = { "matricula" : matricula };
+		Aluno.findOne(criterio,function(erro,aluno){
+			//Aconteceu um erro buscando o aluno
+			if (erro){
+    			callback(erro,null);
+  			} 
+  			
+  			//Se aluno nao encontrado
+  			if (aluno === null){
+  				var inexistente = new Error();
+				inexistente.tipoErro = "inexistente";
+				inexistente.messagem = "Aluno inexistente";
+				callback(inexistente,null);
+  			} else {
+  				
+  				var alunoParcial = {
+  					matricula : aluno.matricula,
+  					nome      : aluno.nome
+  				};
+  				
+  				callback(null,alunoParcial);
+  			}
+		});
+	};
+	
 	return {
-		listarAlunos : listarAlunos
+		listarAlunos : listarAlunos,
+		pesquisarAluno : pesquisarAluno
 	};
 };
