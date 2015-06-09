@@ -6,39 +6,43 @@ module.exports = function (Aluno){
 	var crypto = require("crypto");
 	
 	//Registra um aluno
-	var registrarAluno = function( matricula , nome , senha , error){
+	var registrarAluno = function( matricula , nome , senha , callback){
 		
 		//Verifica se o usuario ja eh registrado
 		var criterio = { matricula : matricula };
-		Aluno.find( criterio , function(err, aluno){
+		Aluno.findOne( criterio , function(err, aluno){
 			//Aconteceu um erro buscando o aluno
 			if (err){
-    			error(err);
+    			callback(err,null);
   			}
   			
   			if (aluno){
-  				var erroDuplicidade = new Error();
+	  			var erroDuplicidade = new Error();
 				erroDuplicidade.tipoErro = "duplicidade";
 				erroDuplicidade.messagem = "Aluno já matriculado";
-				error(erroDuplicidade);
+				callback(erroDuplicidade,null);
+  			} else {
+	  			//Técnica de segurança - incluir um dificultador antes de encriptar
+				var dificultador = 'munificentissimus';
+		
+				//Cria o objeto aluno à partir do Esquema (modelo) mongoose	
+				var novoAluno = new Aluno(
+					{"matricula" : matricula
+					, "nome"     : nome 
+					, "senha"    : crypto.createHash('sha256')
+										 .update(senha + dificultador ,'utf-8')
+										 .digest("hex") });
+			
+				//Aciona a funcao salvar de aluno
+				novoAluno.save(function(err){
+		  			if (err) {
+		  				callback(err,null); 
+		  			} else {
+		  				callback(null,novoAluno);
+		  			}
+				}); 
   			}
 		});
-		
-		//Técnica de segurança - incluir um dificultador antes de encriptar
-		var dificultador = 'munificentissimus';
-
-		//Cria o objeto aluno à partir do Esquema (modelo) mongoose	
-		var aluno = new Aluno(
-			{"matricula" : matricula
-			, "nome"     : nome 
-			, "senha"    : crypto.createHash('sha256')
-								 .update(senha + dificultador ,'utf-8')
-								 .digest("hex") });
-	
-		//Aciona a funcao salvar de aluno
-		aluno.save(function(err){
-  			error(err); 
-		}); 
 	};
 	
 	return {
