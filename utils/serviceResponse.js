@@ -23,6 +23,10 @@ module.exports = function(res){
 		proibido : function (mensagem){
 		  res.statusCode = 403;
 		  res.json(mensagem).end();
+		},
+		naoAutorizado : function (mensagem){
+		  res.statusCode = 401;
+		  res.json(mensagem).end();
 		}
 	}
 };

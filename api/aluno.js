@@ -1,5 +1,7 @@
+var jwt = require("jsonwebtoken");
 var Aluno = require("../models/aluno");
 var seguranca = require("../utils/seguranca");
+var config = require("../config");
 
 var alunoMock = {
 	"nome": "teste",
@@ -46,14 +48,16 @@ exports.registrar = function(req, res) {
 		}
 
 		if (aluno) {
-			serviceResponse.duplicidade("Aluno já matriculado!");
+			serviceResponse.duplicidade("Aluno já registrado!");
 		}
 		else {
 			//Cria o objeto aluno à partir do Esquema (modelo) mongoose	
+			var baseToken = {"a":req.body.matricula,"b":req.body.nome,"c":req.body.senha};
 			var novoAluno = new Aluno({
 				"matricula": req.body.matricula,
 				"nome": req.body.nome,
-				"senha": seguranca.encriptarSha256(req.body.senha)
+				"senha": seguranca.encriptarSha256(req.body.senha),
+				"token": jwt.sign(baseToken,config.SEGREDO_TOKEN)
 			});
 
 			//Aciona a funcao salvar de aluno
@@ -61,9 +65,8 @@ exports.registrar = function(req, res) {
 				if (err) {
 					serviceResponse.falha("Erro salvando dados do aluno " +
 						req.body.nome);
-				}
-				else {
-					serviceResponse.criado(novoAluno.matricula);
+				}else {
+					serviceResponse.criado({ "matricula" : novoAluno.matricula, "autorizacao": novoAluno.token });
 				}
 			});
 		}
@@ -74,9 +77,12 @@ exports.registrar = function(req, res) {
 exports.excluirConta = function(req, res) {
 	var serviceResponse = require("../utils/serviceResponse")(res);
 
+	//TokenAutenticacao
+	var tokenRecebido = req.headers["authorization"].split(" ")[1];
+	
 	//Verifica se o usuario ja eh registrado
 	var criterio = {
-		matricula: req.params.matricula
+		matricula: req.params.matricula, token: tokenRecebido
 	};
 	Aluno.findOne(criterio, function(err, aluno) {
 		if (err) {
@@ -84,7 +90,7 @@ exports.excluirConta = function(req, res) {
 		}
 
 		if (!aluno) {
-			serviceResponse.inexistente("Aluno não encontrado!");
+			serviceResponse.proibido("Somente o próprio aluno pode excluir a conta!");
 		}
 		else {
 			if (aluno.senha !== seguranca.encriptarSha256(req.body.senha)){

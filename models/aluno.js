@@ -13,7 +13,7 @@ var AlunoSchema = new mongoose.Schema({
 		type: String
 	},
 	token: {
-		type: String
+		type: String, index:true
 	}
 });
 

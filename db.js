@@ -1,5 +1,6 @@
 var mongoose = require("mongoose");
+var config = require("./config");
 
-exports.conectar = function(banco){
-	mongoose.connect('mongodb://munificentissimus1-prointeriv-1576013:27017/' + banco );
+exports.conectar = function(banco) {
+	mongoose.connect('mongodb://' + config.MONGODB_URL + ':' + config.MONGODB_PORT + '/' + banco);
 };
