@@ -37,7 +37,6 @@ exports.consultar = function(req, res) {
 
 exports.registrar = function(req, res) {
 	var serviceResponse = require("../utils/serviceResponse")(res);
-
 	//Verifica se o usuario ja eh registrado
 	var criterio = {
 		matricula: req.body.matricula

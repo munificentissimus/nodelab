@@ -18,7 +18,7 @@ module.exports = function(res){
 		},
 		inexistente : function (mensagem){
 		  res.statusCode = 404;
-		  res.json(mensagem).end();;
+		  res.json(mensagem).end();
 		},
 		proibido : function (mensagem){
 		  res.statusCode = 403;
@@ -27,6 +27,10 @@ module.exports = function(res){
 		naoAutorizado : function (mensagem){
 		  res.statusCode = 401;
 		  res.json(mensagem).end();
+		},
+		requisicaoNaoAtendida : function (mensagem){
+		  res.statusCode = 400;
+		  res.json(mensagem).end();
 		}
-	}
+	};
 };
