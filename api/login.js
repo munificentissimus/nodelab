@@ -9,13 +9,16 @@ exports.entrar = function(req, res) {
 		matricula: req.body.matricula,
 		senha    : criptografia.encriptarSha256(req.body.senha)
 	};
+	
 	Aluno.findOne(criterio, function(err, aluno) {
 		if (err) {
 			serviceResponse.falha("Erro buscando aluno " + req.body.matricula);
 		}
 
 		if (aluno) {
-			serviceResponse.sucesso({ "matricula" : aluno.matricula, "autorizacao": aluno.token });
+			//Apaga a senha no retorno - impedir descobrir algoritmo de criptografia	
+			aluno.senha = ""; 
+			serviceResponse.sucesso(aluno);
 		}
 		else {
 			serviceResponse.naoAutorizado("Matricula ou senha inválidos!");

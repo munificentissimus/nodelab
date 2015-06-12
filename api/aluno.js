@@ -1,50 +1,8 @@
-var jwt = require("jsonwebtoken");
-var Aluno = require("../models/aluno");
-var criptografia = require("../lib/seguranca/criptografia");
-var config = require("../config");
-
-var alunoMock = {
-	"nome": "teste",
-	"sobrenome": "teste"
-};
-
-exports.listarAtividades = function(req,res){console.log('todo: listar atividades do aluno')};
-exports.consultarAtividade = function(req,res){console.log('todo: consultar uma atividade do aluno')};
-
-
-exports.listar = function(req, res) {
-	var serviceResponse = require("../lib/utils/serviceResponse")(res);
-	
-	var criterio = {};
-	
-	if (req.query.nome){
-		criterio.nome = req.query.nome;
-	}
-	
-	if (req.query.matricula){
-		criterio.matricula = req.query.matricula;
-	}
-
-	Aluno.find(criterio, function(err, alunos) {
-		if (err) {
-			serviceResponse.falha("Erro pesquisando alunos");
-		}
-		else {
-			var alunosParcial = [];
-			alunos.forEach(function(aluno){
-				var alunoParcial = {
-					matricula: aluno.matricula,
-					nome: aluno.nome
-				};
-				alunosParcial.push(alunoParcial);
-			});
-			serviceResponse.sucesso(alunosParcial);
-		}
-	});
-};
 exports.consultar = function(req, res) {
-	var matricula = req.params.matricula;
 	var serviceResponse = require("../lib/utils/serviceResponse")(res);
+	var Aluno = require("../models/aluno");
+
+	var matricula = req.params.matricula;
 
 	var criterio = {
 		"matricula": matricula
@@ -68,8 +26,77 @@ exports.consultar = function(req, res) {
 	});
 };
 
+exports.excluir = function(req, res) {
+	var Aluno = require("../models/aluno");
+	var serviceResponse = require("../lib/utils/serviceResponse")(res);
+
+	//TokenAutenticacao
+	var tokenRecebido = req.headers["authorization"].split(" ")[1];
+
+	//Verifica se o usuario ja eh registrado
+	var criterio = {
+		matricula: req.params.matricula,
+		token: tokenRecebido
+	};
+	Aluno.findOne(criterio, function(err, aluno) {
+		if (err) {
+			serviceResponse.falha("Erro buscando aluno " + req.body.matricula);
+		}
+
+		if (!aluno) {
+			serviceResponse.proibido("Somente o próprio aluno pode excluir a conta!");
+		}
+		else {
+			Aluno.find(criterio).remove().exec();
+			serviceResponse.sucesso("Conta excluída com sucesso!");
+		}
+	});
+};
+
+exports.listar = function(req, res) {
+	var serviceResponse = require("../lib/utils/serviceResponse")(res);
+	var Aluno = require("../models/aluno");
+
+	var criterio = {};
+
+	if (req.query.nome) {
+		criterio.nome = req.query.nome;
+	}
+
+	if (req.query.matricula) {
+		criterio.matricula = req.query.matricula;
+	}
+
+	Aluno.find(criterio, function(err, alunos) {
+		if (err) {
+			serviceResponse.falha("Erro pesquisando alunos");
+		}
+		else {
+			var alunosParcial = [];
+			alunos.forEach(function(aluno) {
+				var alunoParcial = {
+					matricula: aluno.matricula,
+					nome: aluno.nome
+				};
+				alunosParcial.push(alunoParcial);
+			});
+			serviceResponse.sucesso(alunosParcial);
+		}
+	});
+};
+
 exports.registrar = function(req, res) {
 	var serviceResponse = require("../lib/utils/serviceResponse")(res);
+	var jwt = require("jsonwebtoken");
+	var Aluno = require("../models/aluno");
+	var criptografia = require("../lib/seguranca/criptografia");
+	var config = require("../config");
+
+	//Valida a requisicao
+	if (!req.body.matricula || !req.body.nome || !req.body.senha) {
+		serviceResponse.requisicaoNaoAtendida('Matricula, nome e senha obrigatorios');
+	}
+
 	//Verifica se o usuario ja eh registrado
 	var criterio = {
 		matricula: req.body.matricula
@@ -84,12 +111,16 @@ exports.registrar = function(req, res) {
 		}
 		else {
 			//Cria o objeto aluno à partir do Esquema (modelo) mongoose	
-			var baseToken = {"a":req.body.matricula,"b":req.body.nome,"c":req.body.senha};
+			var baseToken = {
+				"a": req.body.matricula,
+				"b": req.body.nome,
+				"c": req.body.senha
+			};
 			var novoAluno = new Aluno({
 				"matricula": req.body.matricula,
 				"nome": req.body.nome,
 				"senha": criptografia.encriptarSha256(req.body.senha),
-				"token": jwt.sign(baseToken,config.SEGREDO_TOKEN)
+				"token": jwt.sign(baseToken, config.SEGREDO_TOKEN)
 			});
 
 			//Aciona a funcao salvar de aluno
@@ -97,40 +128,22 @@ exports.registrar = function(req, res) {
 				if (err) {
 					serviceResponse.falha("Erro salvando dados do aluno " +
 						req.body.nome);
-				}else {
-					serviceResponse.criado({ "matricula" : novoAluno.matricula, "autorizacao": novoAluno.token });
+				}
+				else {
+					var criterio = {
+						"matricula": novoAluno.matricula
+					};
+					Aluno.findOne(criterio, function(err, alunoCriado) {
+						if (err) {
+							serviceResponse.falha("Erro buscando aluno " + alunoCriado.matricula);
+						}
+						else {
+							alunoCriado.senha = " ";
+							serviceResponse.criado(alunoCriado);
+						}
+					});
 				}
 			});
-		}
-	});
-};
-
-
-exports.excluirConta = function(req, res) {
-	var serviceResponse = require("../lib/utils/serviceResponse")(res);
-
-	//TokenAutenticacao
-	var tokenRecebido = req.headers["authorization"].split(" ")[1];
-	
-	//Verifica se o usuario ja eh registrado
-	var criterio = {
-		matricula: req.params.matricula, token: tokenRecebido
-	};
-	Aluno.findOne(criterio, function(err, aluno) {
-		if (err) {
-			serviceResponse.falha("Erro buscando aluno " + req.body.matricula);
-		}
-
-		if (!aluno) {
-			serviceResponse.proibido("Somente o próprio aluno pode excluir a conta!");
-		}
-		else {
-			if (aluno.senha !== criptografia.encriptarSha256(req.body.senha)){
-				serviceResponse.proibido("Senha inválida! Exclusão não realizada!");
-			} else {
-				Aluno.find(criterio).remove().exec();
-				serviceResponse.sucesso("Conta excluída com sucesso!");
-			}
-		}
+		} 
 	});
 };

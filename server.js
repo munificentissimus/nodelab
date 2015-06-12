@@ -54,6 +54,7 @@ function apiRest() {
    var login = require("./api/login.js");
    var autenticacao = require("./lib/seguranca/autenticacao.js");
 
+   //Login da aplicacao
    app.post('/api/login'
       , login.entrar);
    
@@ -64,12 +65,12 @@ function apiRest() {
    //Excluir aluno      
    app.delete('/api/alunos/:matricula',
       autenticacao.verificarAutenticacao,
-      aluno.excluirConta);
+      aluno.excluir);
       
    //Listar atividades de um aluno
-   app.get('/api/aluno/:matricula/atividades',
+   app.get('/api/alunos/:matricula/atividades',
       autenticacao.verificarAutenticacao,
-      aluno.listarAtividades
+      atividade.listarAtividadesPorAluno
       );
       
    //Nova atividade
@@ -81,7 +82,7 @@ function apiRest() {
    //Excluir atividade
    app.delete('/api/atividades/:atividade',
       autenticacao.verificarAutenticacao,
-      atividade.excluirAtividade
+      atividade.excluir
       );
    
    //Consultar atividade com seus integrantes e contribuições
@@ -92,7 +93,7 @@ function apiRest() {
    //Consultar integrante de uma atividade
    app.get('/api/atividades/:atividade/integrantes/:matricula',
       autenticacao.verificarAutenticacao,
-      aluno.consultar);
+      atividade.consultarIntegrante);
       
    //Novo integrante   
    app.post('/api/atividades/:atividade/integrantes',
@@ -108,7 +109,7 @@ function apiRest() {
    //Listar contribuições em uma atividade de um integrante
    app.get('/api/atividade/:atividade/integrantes/:matricula/contribuicoes',
       autenticacao.verificarAutenticacao,
-      atividade.listarContribuicoesDeIntegrante);
+      atividade.listarContribuicoesPorIntegrante);
       
    //Postar contribuicao em uma atividade   
    app.post('/api/atividade/:atividade/contribuicoes',
