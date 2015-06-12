@@ -1,3 +1,9 @@
+exports.listarDoAluno = function (req,res){console.log('listar atividades do aluno')};
+exports.listarIntegrantes = function (req,res){console.log('listar integrantes da atividade')};
+exports.listarContribuicoesDaAtividade = function (req,res){console.log('listar contribuicoes na atividade')};
+exports.listarContribuicoesDeIntegrante = function (req,res){console.log('listar atividades do aluno')};
+exports.consultar = function (req,res){console.log('consultar atividade')};
+
 var fs = require("fs");
 var S = require("string");
 var formidable = require("formidable");
@@ -6,7 +12,8 @@ var mime = require("mime");
 var path = require("path");
 
 function ehTipoArquivoValido(tipoArquivo) {
-	var tiposPermitidos = ["application/msword",
+	var tiposPermitidos = [
+		"application/msword",
 		"text/xml",
 		"application/vnd.openxmlformats-officedocument.wordprocessingml.document"
 	];
@@ -22,33 +29,17 @@ function ehTipoArquivoValido(tipoArquivo) {
 	return valido;
 }
 
-function saoCamposValidos(campos) {
-	var campoMatriculaOk = false;
-	var campoGrupoOk = false;
-
-	campos.forEach(function(campo) {
-		if (campo.nome === "matricula" && campo.valor.length > 0) {
-			campoMatriculaOk = true;
-		}
-		if (campo.nome === "grupo" && campo.valor.length > 0) {
-			campoGrupoOk = true;
-		}
-	});
-
-	if (campoMatriculaOk && campoGrupoOk) {
-		return true;
-	}
-
-	return false;
-}
-
-exports.postar = function(req, res) {
+exports.postarContribuicao = function(req, res) {
 	var serviceResponse = require("../lib/utils/serviceResponse")(res);
+	
+	var atividade = req.params.atividade;
+	var matricula = req.params.matricula;
+	
 	var form = new formidable.IncomingForm(),
 		files = [],
 		fields = [];
 
-	form.uploadDir = "./uploads";
+	form.uploadDir = "./contribuicoes";
 	form.keepExtensions = true;
 
 	var MB = 1024 * 1024;
@@ -65,9 +56,9 @@ exports.postar = function(req, res) {
 		})
 		.on('file', function(field, file) {
 
-			if (!saoCamposValidos(fields)) {
+			if (!(atividade && matricula)) {
 				uploadCancelado = true;
-				motivoCancelamento = "matricula e grupo obrigatórios";
+				motivoCancelamento = "matricula e atividade obrigatórios";
 			}
 
 			if (!ehTipoArquivoValido(file.type)) {
@@ -80,37 +71,35 @@ exports.postar = function(req, res) {
 				serviceResponse.requisicaoNaoAtendida(motivoCancelamento);
 			}
 			else {
-				var nomeGrupo = "";
+				var nomeAtividade = "";
 				var nomeMatricula = "";
 
 				fields.forEach(function(campo) {
-					if (campo.nome === "grupo") {
-						nomeGrupo = campo.valor;
+					if (campo.nome === "atividade") {
+						nomeAtividade = campo.valor;
 					}
 					if (campo.nome === "matricula") {
 						nomeMatricula = campo.valor;
 					}
 				});
 
-				var pastaDoGrupo = form.uploadDir + "/" + nomeGrupo;
-				if (!fs.existsSync(pastaDoGrupo)) {
-					fs.mkdir(pastaDoGrupo, function(error) {
+				var pastaDaAtividade = form.uploadDir + "/" + nomeAtividade;
+				if (!fs.existsSync(pastaDaAtividade)) {
+					fs.mkdir(pastaDaAtividade, function(error) {
 						console.log(error);
 					});
 				}
 				var versao = dateTime.getDateTimeNumber();
 				var nomeArquivo = file.name.replace(/\W+/g, '-').toLowerCase();
-				//Grava a ultima versao do trabalho do grupo
-				//fs.rename(file.path, pastaDoGrupo + "/" + file.name + "v" + versao + nomeGrupo); 
-				//Grava a versão atual do trabalho do usuario
-				var arquivoUsuario = pastaDoGrupo + "/user_" + nomeMatricula + "-" + nomeArquivo;
+				//Grava a versão atual da contribuição do aluno
+				var arquivoUsuario = pastaDaAtividade + "/user_" + nomeMatricula + "-" + nomeArquivo;
 				if (fs.existsSync(arquivoUsuario)) {
 					fs.unlink(arquivoUsuario);
 				}
 				fs.createReadStream(file.path).pipe(fs.createWriteStream(arquivoUsuario));
-				//Grava a versão do trabalho em grupo
-				var arquivoGrupo = pastaDoGrupo + "/" + versao + "-" + nomeArquivo;
-				fs.createReadStream(file.path).pipe(fs.createWriteStream(arquivoGrupo));
+				//Grava a versão da contribuição na atividade
+				var arquivoatividade = pastaDaAtividade + "/" + versao + "-" + nomeArquivo;
+				fs.createReadStream(file.path).pipe(fs.createWriteStream(arquivoatividade));
 				//Exclui o arquivo temporario
 				fs.unlink(file.path);
 
@@ -132,21 +121,20 @@ exports.postar = function(req, res) {
 	form.parse(req);
 };
 
-exports.getTrabalhoAluno = function(req, res) {
-	var serviceResponse = require("../lib/utils/serviceResponse")(res);
-	var matricula = req.params.matricula;
-	var grupo = req.params.grupo;
-	var pastaDoGrupo = "./uploads/" + grupo;
+exports.baixarContribuicao = function(req, res) {
+	var atividade = req.params.atividade;
+	var contribuicao = req.params.contribuicao;
+	var pastaDaAtividade = "./contribuicoes/" + atividade;
 
-	var arquivosGrupo = fs.readdirSync(pastaDoGrupo);
+	var contribuicoesNaAtividade = fs.readdirSync(pastaDaAtividade);
 
 	var arquivosUsuario = [];
 	var caminhoArquivo = "";
 
-	arquivosGrupo.forEach(function(file) {
-		if (S(file).startsWith("user_" + matricula)) {
+	contribuicoesNaAtividade.forEach(function(file) {
+		if (file === contribuicao){
 			console.dir(file);
-			caminhoArquivo = pastaDoGrupo + "/" + file;
+			caminhoArquivo = pastaDaAtividade + "/" + file;
 			arquivosUsuario.push({
 				"nomeDoArquivo": file
 			});
@@ -161,7 +149,4 @@ exports.getTrabalhoAluno = function(req, res) {
 
 	var filestream = fs.createReadStream(caminhoArquivo);
 	filestream.pipe(res);
-
-
-	//	res.sendfile(caminhoArquivo); 
 };

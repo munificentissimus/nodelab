@@ -5,11 +5,11 @@
 //******************************************************************************
 console.info("Servidor Node iniciando...");
 
-var app = configurarAplicacao();
-conectarAoBancoDeDados('prointer');
-iniciarApiRest();
-monitorarErros();
-iniciarAplicacao();
+var app = config();
+
+mongoDB('prointer');
+apiRest();
+iniciar();
 
 console.info("Servidor Node iniciado!");
 //******************************************************************************
@@ -19,7 +19,7 @@ console.info("Servidor Node iniciado!");
 /* -------------------------------------------------------------------------- */
 
 // 1. Define as configuracoes iniciais da aplicacao
-function configurarAplicacao() {
+function config() {
    var path = require("path");
    var express = require('express');
    var bodyParser = require('body-parser');
@@ -43,59 +43,92 @@ function configurarAplicacao() {
 }
 
 // 2. Conecta ao banco de dados utilizado pela aplicacao
-function conectarAoBancoDeDados(nomeBD) {
+function mongoDB(nomeBD) {
    require("./db").conectar(nomeBD);
 }
 
 // 3. Inicia a API de Webservices REST
-function iniciarApiRest() {
+function apiRest() {
    var aluno = require("./api/aluno.js");
-   var alunos = require("./api/alunos.js");
+   var atividade = require("./api/atividade.js");
    var login = require("./api/login.js");
-   var trabalho = require("./api/trabalho.js");
    var autenticacao = require("./lib/seguranca/autenticacao.js");
 
-   //Consultar aluno
-   app.get('/api/alunos/:matricula',
-      autenticacao.verificarAutenticacao,
-      aluno.consultar);
-   //Registrar conta de aluno   
+   app.post('/api/login'
+      , login.entrar);
+   
+   //Novo aluno
    app.post('/api/alunos',
       aluno.registrar);
-   //Excluir conta de aluno   
+      
+   //Excluir aluno      
    app.delete('/api/alunos/:matricula',
       autenticacao.verificarAutenticacao,
       aluno.excluirConta);
-   //Listar aluno   
-   app.get('/api/alunos',
+      
+   //Listar atividades de um aluno
+   app.get('/api/aluno/:matricula/atividades',
       autenticacao.verificarAutenticacao,
-      alunos.listar);
-   //Logar   
-   app.post('/api/login', login.logar);
-   //Upload trabalho
-   app.post('/trabalhos',
+      aluno.listarAtividades
+      );
+      
+   //Nova atividade
+   app.post('/api/atividades',
       autenticacao.verificarAutenticacao,
-      trabalho.postar);
-   //Download trabalho
-   app.get('/api/grupos/:grupo/alunos/:matricula/trabalho',
+      atividade.novaAtividade
+      );
+      
+   //Excluir atividade
+   app.delete('/api/atividades/:atividade',
       autenticacao.verificarAutenticacao,
-      trabalho.getTrabalhoAluno);
-   //Listar grupos
-   //Criar grupo
-   //Incluir aluno em grupo
-   //Excluir aluno de grupo
-   //Atualizar dados do grupo
+      atividade.excluirAtividade
+      );
+   
+   //Consultar atividade com seus integrantes e contribuições
+   app.get('/api/atividades/:atividade',
+      autenticacao.verificarAutenticacao,
+      atividade.consultar);
+      
+   //Consultar integrante de uma atividade
+   app.get('/api/atividades/:atividade/integrantes/:matricula',
+      autenticacao.verificarAutenticacao,
+      aluno.consultar);
+      
+   //Novo integrante   
+   app.post('/api/atividades/:atividade/integrantes',
+      autenticacao.verificarAutenticacao,
+      atividade.novoIntegrante);
+   
+   //Excluir integrante
+   app.delete('/api/atividades/:atividade/integrantes/:matricula',
+      autenticacao.verificarAutenticacao,
+      atividade.excluirIntegrante
+   );
+      
+   //Listar contribuições em uma atividade de um integrante
+   app.get('/api/atividade/:atividade/integrantes/:matricula/contribuicoes',
+      autenticacao.verificarAutenticacao,
+      atividade.listarContribuicoesDeIntegrante);
+      
+   //Postar contribuicao em uma atividade   
+   app.post('/api/atividade/:atividade/contribuicoes',
+      autenticacao.verificarAutenticacao,
+      atividade.postarContribuicao);
+      
+   //Baixar uma contribuicao de uma atividade   
+   app.get('/api/atividade/:atividade/contribuicoes/:contribuicao',
+      autenticacao.verificarAutenticacao,
+      atividade.baixarContribuicao);
 }
 
-//4. Captura exceções de forma impedir a interrupção do processo
-function monitorarErros() {
+//4. Inicia a aplicacao na porta definida nas configuracoes
+function iniciar() {
+   var config = require("./config");
+   
+   //Captura exceções de forma impedir a interrupção do processo
    process.on('uncaughtException', function(err) {
       console.error(err);
    });
-}
-
-//5. Inicia a aplicacao na porta definida nas configuracoes
-function iniciarAplicacao() {
-   var config = require("./config");
+   
    app.listen(process.env.PORT || config.PORTA_APLICACAO);
 }

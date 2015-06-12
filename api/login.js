@@ -1,10 +1,10 @@
 var criptografia = require("../lib/seguranca/criptografia");
 var Aluno = require("../models/aluno");
 
-exports.logar = function(req, res) {
+exports.entrar = function(req, res) {
 	var serviceResponse = require("../lib/utils/serviceResponse")(res);
 
-	//Verifica se o usuario ja eh registrado
+	//Verifica se o aluno ja possui conta
 	var criterio = {
 		matricula: req.body.matricula,
 		senha    : criptografia.encriptarSha256(req.body.senha)
