@@ -8,7 +8,7 @@ var alunoMock = {
 
 
 exports.listar = function(req, res) {
-	var serviceResponse = require("../utils/serviceResponse")(res);
+	var serviceResponse = require("../lib/utils/serviceResponse")(res);
 	
 	var criterio = {};
 	

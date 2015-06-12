@@ -1,10 +1,9 @@
 var fs = require("fs");
 var S = require("string");
 var formidable = require("formidable");
-var dateTime = require("../utils/dateTime");
+var dateTime = require("../lib/utils/dateTime");
 var mime = require("mime");
 var path = require("path");
-
 
 function ehTipoArquivoValido(tipoArquivo) {
 	var tiposPermitidos = ["application/msword",
@@ -44,7 +43,7 @@ function saoCamposValidos(campos) {
 }
 
 exports.postar = function(req, res) {
-	var serviceResponse = require("../utils/serviceResponse")(res);
+	var serviceResponse = require("../lib/utils/serviceResponse")(res);
 	var form = new formidable.IncomingForm(),
 		files = [],
 		fields = [];
@@ -100,7 +99,7 @@ exports.postar = function(req, res) {
 					});
 				}
 				var versao = dateTime.getDateTimeNumber();
-				var nomeArquivo = file.name;
+				var nomeArquivo = file.name.replace(/\W+/g, '-').toLowerCase();
 				//Grava a ultima versao do trabalho do grupo
 				//fs.rename(file.path, pastaDoGrupo + "/" + file.name + "v" + versao + nomeGrupo); 
 				//Grava a versão atual do trabalho do usuario
@@ -134,7 +133,7 @@ exports.postar = function(req, res) {
 };
 
 exports.getTrabalhoAluno = function(req, res) {
-	var serviceResponse = require("../utils/serviceResponse")(res);
+	var serviceResponse = require("../lib/utils/serviceResponse")(res);
 	var matricula = req.params.matricula;
 	var grupo = req.params.grupo;
 	var pastaDoGrupo = "./uploads/" + grupo;

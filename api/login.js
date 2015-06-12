@@ -1,13 +1,13 @@
-var seguranca = require("../utils/seguranca");
+var criptografia = require("../lib/seguranca/criptografia");
 var Aluno = require("../models/aluno");
 
 exports.logar = function(req, res) {
-	var serviceResponse = require("../utils/serviceResponse")(res);
+	var serviceResponse = require("../lib/utils/serviceResponse")(res);
 
 	//Verifica se o usuario ja eh registrado
 	var criterio = {
 		matricula: req.body.matricula,
-		senha    : seguranca.encriptarSha256(req.body.senha)
+		senha    : criptografia.encriptarSha256(req.body.senha)
 	};
 	Aluno.findOne(criterio, function(err, aluno) {
 		if (err) {

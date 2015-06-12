@@ -1,6 +1,6 @@
 var jwt = require("jsonwebtoken");
 var Aluno = require("../models/aluno");
-var seguranca = require("../utils/seguranca");
+var criptografia = require("../lib/seguranca/criptografia");
 var config = require("../config");
 
 var alunoMock = {
@@ -11,7 +11,7 @@ var alunoMock = {
 
 exports.consultar = function(req, res) {
 	var matricula = req.params.matricula;
-	var serviceResponse = require("../utils/serviceResponse")(res);
+	var serviceResponse = require("../lib/utils/serviceResponse")(res);
 
 	var criterio = {
 		"matricula": matricula
@@ -36,7 +36,7 @@ exports.consultar = function(req, res) {
 };
 
 exports.registrar = function(req, res) {
-	var serviceResponse = require("../utils/serviceResponse")(res);
+	var serviceResponse = require("../lib/utils/serviceResponse")(res);
 	//Verifica se o usuario ja eh registrado
 	var criterio = {
 		matricula: req.body.matricula
@@ -55,7 +55,7 @@ exports.registrar = function(req, res) {
 			var novoAluno = new Aluno({
 				"matricula": req.body.matricula,
 				"nome": req.body.nome,
-				"senha": seguranca.encriptarSha256(req.body.senha),
+				"senha": criptografia.encriptarSha256(req.body.senha),
 				"token": jwt.sign(baseToken,config.SEGREDO_TOKEN)
 			});
 
@@ -74,7 +74,7 @@ exports.registrar = function(req, res) {
 
 
 exports.excluirConta = function(req, res) {
-	var serviceResponse = require("../utils/serviceResponse")(res);
+	var serviceResponse = require("../lib/utils/serviceResponse")(res);
 
 	//TokenAutenticacao
 	var tokenRecebido = req.headers["authorization"].split(" ")[1];
@@ -92,7 +92,7 @@ exports.excluirConta = function(req, res) {
 			serviceResponse.proibido("Somente o próprio aluno pode excluir a conta!");
 		}
 		else {
-			if (aluno.senha !== seguranca.encriptarSha256(req.body.senha)){
+			if (aluno.senha !== criptografia.encriptarSha256(req.body.senha)){
 				serviceResponse.proibido("Senha inválida! Exclusão não realizada!");
 			} else {
 				Aluno.find(criterio).remove().exec();

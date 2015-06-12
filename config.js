@@ -16,3 +16,5 @@ exports.MONGODB_URL = "munificentissimus1-prointeriv-1576013";
 exports.MONGODB_PORT = "27017";
 //Configura o ambiente
 exports.ENV_DEV = true;
+//Porta da aplicacao
+exports.PORTA_APLICACAO = 3000;
